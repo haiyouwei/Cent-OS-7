@@ -1,0 +1,19 @@
+# Base images 基础镜像
+FROM centos:centos7.9.2009
+
+# MAINTAINER 维护者信息
+LABEL maintainer 1973119854@qq.com
+
+# 下载并替换 CentOS 镜像源
+RUN curl -o /etc/yum.repos.d/CentOS-Base.repo http://mirrors.cloud.tencent.com/repo/centos7_base.repo && \
+    yum clean all && \
+    yum makecache
+
+# 通过yum安装软件
+RUN yum install -y vim && \
+    yum install -y httpd
+
+
+docker build --progress=plain -t centos7:0.0.1 -f Dockerfile . --no-cache
+
+docker pull centos7
