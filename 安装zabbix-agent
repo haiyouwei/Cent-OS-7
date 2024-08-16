@@ -1,0 +1,24 @@
+由于系统自带的yum源无法直接安装zabbix相关组件，需要zabbix-agent客户端的rpm包，教师提供如下版本rpm包
+附阿里云镜像源地址：https://mirrors.aliyun.com/zabbix/zabbix/5.0/rhel/7/x86_64/
+安装部署zabbix-agent
+将安装包上传到需要安装zabbix客户端的服务器，执行下面的命令进行安装
+    rpm -ivh zabbix-agent-5.0.1-1.el7.x86_64.rpm
+配置zabbix-agent
+    vim /etc/zabbix/zabbix_agentd.conf
+          PidFile=/var/run/zabbix/zabbix_agentd.pid
+          LogFile=/var/log/zabbix/zabbix_agentd.log
+          LogFileSize=0
+          DenyKey=system.run[*]
+          Server=172.16.2.11 //这里修改为zabbix服务器ip地址
+          ListenPort=10050
+          # Mandatory: yes, if StartAgents is not explicitly set to 0
+          ### Option: StartAgents 被动模式为3，主动模式请启用并设置为0,并设置服务器ip
+          # StartAgents=3
+          # ServerActive=172.16.2.11 //这里是采用主动模式时的zabbix服务器ip地址，一般不用
+          Hostname=client_210 //这里设置客户端主机名，注意这里的名称和在zabbix添加客户机时所填的主机名要一致
+          Include=/etc/zabbix/zabbix_agentd.d/*.conf
+启动zabbix-agent并设置开机自动启动
+     systemctl start zabbix-agent
+     systemctl enable zabbix-agent
+注意：如果客户机开启了防火墙，请在防火墙规则中放行tcp/udp的10050端口，以免服务端无法连接客户端
+zabbix平台添加客户机（在前端操作添加）（图像化结构比较简单！！！）
