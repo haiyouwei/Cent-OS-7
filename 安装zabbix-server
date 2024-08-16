@@ -1,0 +1,56 @@
+安装部署zabbix
+     https://www.zabbix.com/download?  (官方安装手册)
+安装配置zabbix专用yum源
+     1、rpm -Uvh https://repo.zabbix.com/zabbix/5.0/rhel/7/x86_64/zabbix-release-5.0-1.el7.noarch.rpm
+     2、yum clean all
+     3、yum makecache fast
+安装zabbix服务端组件
+     yum -y install zabbix-server-mysql zabbix-web-mysql zabbix-get
+安装zabbix前端组件
+     yum -y install centos-release-scl
+编辑配置文件 /etc/yum.repos.d/zabbix.repo，并设置enabled为1（1-启用；0-不启用）启用前端，保存并退出文件
+     vi /etc/yum.repos.d/zabbix.repo
+安装zabbix前端页面、初始数据库、PHP及httpd组件
+     yum -y install zabbix-web-mysql-scl zabbix-apache-conf-scl
+安装并配置MySQL数据库
+安装配置MySQL专用yum源，以便使用yum方式安装数据
+     rpm -ivh https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm
+安装MySQL数据库组件
+     yum -y install yum-utils
+     yum-config-manager --disable mysql80-community
+     yum-config-manager --enable mysql57-community
+     yum install mysql-community-server -y 
+运行MySQL并设置开机自启动
+     systemctl start mysqld 
+     systemctl enable mysqld
+数据库初始配置，设置添加zabbix相关账户密码及数据库
+从MySQL安装日志中查看临时root密码，登录数据库，并设置root密码
+     grep 'temporary password' /var/log/mysqld.log
+     mysql -uroot -p't8H/Dsf2FP0h' 
+登录后，进行zabbix用户创建及权限设置
+     ALTER USER 'root'@'localhost' IDENTIFIED BY '[密码]'; 
+     create database zabbix character set utf8 collate utf8_bin; //创建zabbix数据库
+     create user zabbix@localhost identified by 'Zabbix@123'; //创建zabbix数据库用户，并设置密码（单引号内修改为自己设置的密码）
+     grant all privileges on zabbix.* to zabbix@localhost; //设置zabbix用户对zabbix数据库具有本地管理权限
+     quit                //退出数据库命令行
+导入zabbix初始数据库
+     zcat /usr/share/doc/zabbix-server-mysql*/create.sql.gz | mysql -uzabbix -p'Zabbix@123' zabbix
+zabbix配置初始化
+配置数据库连接信息
+编辑配置文件 /etc/zabbix/zabbix_server.conf，找到以下字段，去掉前面的#号，填入正确的zabbix数据库连接信息，保存并退出文件
+     DBHost=localhost
+     DBName=zabbix
+     DBUser=zabbix
+     DBPassword=Zabbix@123
+注意：DBName和DBUser默认就是zabbix，只需要把另外两个打开即可。
+配置时区信息
+编辑配置文件 /etc/opt/rh/rh-php72/php-fpm.d/zabbix.conf，找到php_value[date.timezone] = 字段，去掉前面的分号，并填入上海时区
+     php_value[date.timezone] = Asia/Shanghai
+配置字体，避免前台监控图形中文乱码
+     yum -y install wqy-microhei-fonts
+     mv /usr/share/fonts/dejavu/DejaVuSans.ttf /usr/share/fonts/dejavu/DejaVuSans.ttf.bak
+     cp -f /usr/share/fonts/wqy-microhei.ttc /usr/share/fonts/dejavu/DejaVuSans.ttf
+启动zabbix相关服务并设置开机自启动
+     systemctl restart zabbix-server httpd rh-php72-php-fpm
+     systemctl enable zabbix-server httpd rh-php72-php-fpm
+浏览器上访问前端，进行初始化安装，至此结束！
