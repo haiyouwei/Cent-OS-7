@@ -1,0 +1,65 @@
+一、客户端添加后，server端界面无法正常监控
+     1、排查是否客户端配置正确，server地址是否正确，客户端10050端口是否打开
+     2、检查几个客户端服务器与server端时间是否一致，不一致需要同步时钟源，使用ntpdatecn.pool.ntp.org
+     3、可通过在服务端安装yum install zabbix-get.x86_64检查与客户端的数据发送是否正常
+          zabbix_get -s 192.168.42.210 -p 10050 -k "system.cpu.load[all,avg1]"
+            0.000000
+返回如上类似结果，说明正常
+
+如果报如下错误，说明客户端配置还是有问题
+    zabbix_get -s 192.168.42.209 -p 10051 -k "system.cpu.load[all,avg1]"
+    zabbix_get [84696]: Check access restrictions in Zabbix agent configuration
+4、防火墙、selinux是否正常关闭
+5、保证页面添加的客户端名称跟客户端配置文件中的Hostname一致
+
+二、页面访问找不到/zabbix路径
+问题现象：
+        Not Found
+        The requested URL /zabbix was not found on this server
+问题日志：
+        AH02282: No slotmem from mod_heartmonitor
+解决办法：
+原因是/etc/httpd/conf.d/目录缺少zabbix.conf配置文件，手动创建此文件，复制下页内容到配置文件中后重启Httpd服务解决
+zabbix.conf内容：
+               #Alias /zabbix /usr/share/zabbix
+               <Directory "/usr/share/zabbix">
+                    Options FollowSymLinks
+                    AllowOverride None
+                    Require all granted
+               <IfModule dir_module>
+                    DirectoryIndex index.php
+               </IfModule>
+               <FilesMatch \.(php|phar)$>
+                    SetHandler "proxy:unix:/var/opt/rh/rh-php72/run/phpfpm/zabbix.sock|fcgi://localhost“
+               # SetHandler "proxy:unix:/var/opt/rh/rh-php73/run/phpfpm/zabbix.sock|fcgi://localhost"
+               </FilesMatch>
+               </Directory>
+               <Directory "/usr/share/zabbix/conf">
+                    Require all denied
+               </Directory>
+               <Directory "/usr/share/zabbix/app">
+                    Require all denied
+               </Directory>
+               <Directory "/usr/share/zabbix/include">
+                    Require all denied
+               </Directory>
+               <Directory "/usr/share/zabbix/local"> 
+                    Require all denied
+               </Directory>
+ 
+三、数据获取问题
+zabbix配置完毕后，可能会遇到数据获取不到或者获取数据较少的情况。
+(一)数据获取不到几种可能常见原因：
+1)配置不对：agent和server端配置不对应
+2)Agent没有启动：配置完成未启动或未设置开机启动
+3)网络不通：防火墙未放开
+4)版本不兼容：如snmp v1，v2，v3
+5)字段类型不匹配：time和string等
+6)模板选择不对
+Zabbix获取不到数据是初学者经常可能遇到的问题，以上几个步骤可以涵盖大部分此类问题的原因。
+(二)数据获取较少
+此类问题主要可以分为3类：
+1)监控agent的版本和Server版本及模板库的不配，获取部分数据，
+2)操作系统或网络snmp库版本太低，本身提供的接口信息较少
+3)Zabbix模板定义获取数据的范围或者指标太少，导致管理节点智能获取较少数据。
+如遇此类问题首先要确认是否是因为受监控对象自身版本太低导致，如不能升级更新客户端的操作系统或者网络设备等监控对象的系统版本，可通过自定义的方式，手工添加相应的监控item或范围。必要的时候更新监控模板，完善相应监控内容。
