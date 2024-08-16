@@ -1,0 +1,25 @@
+yum安装
+yum安装(最好使用官方的源，epel源安装的nginx配置文件内容比较乱)
+官方安装指导文档：http://nginx.org/en/linux_packages.html#RHEL-CentOS
+1、添加nginx的官方源
+    vim /etc/yum.repos.d/nginx.repo
+         [nginx-stable]
+         name=nginx stable repo
+         baseurl=http://nginx.org/packages/centos/$releasever/$basearch/
+         gpgcheck=1
+         enabled=1
+         gpgkey=https://nginx.org/keys/nginx_signing.key
+         module_hotfixes=true
+         [nginx-mainline]
+         name=nginx mainline repo
+         baseurl=http://nginx.org/packages/mainline/centos/$releasever/$basearch/
+         gpgcheck=1
+         enabled=0
+         gpgkey=https://nginx.org/keys/nginx_signing.key
+         module_hotfixes=true
+2、下载nginx软件 yum -y install nginx
+3. 查看nginx版本 nginx -v
+nginx启动与停止
+    systemctl start nginx 启动
+    systemctl restart nginx 重启
+    systemctl stop nginx 停止
